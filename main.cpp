@@ -81,38 +81,30 @@ void count_sort_par(std::vector<data_t> &arr, unsigned concurrency) {
 
     size_type i = 0;
     auto it = counts.begin();
-    std::vector<std::thread> threads;
-    threads.reserve(2);
     std::mutex next_block;
 
-    for (size_t t = 0; t < 2; ++t) {
-        threads.emplace_back([&arr, &it, &i, &next_block, &counts](){
-            decltype(it) lock_it;
-            size_type start, end;
-            data_t value;
-            while (true) {
-                {
-                    std::lock_guard lock{next_block};
-                    lock_it = it;
-                    if (lock_it == counts.end()) {
-                        break;
-                    }
-                    ++it;
-                    start = i;
-                    i += lock_it->second;
+    parallel_exec(concurrency, [&arr, &it, &i, &next_block, &counts](size_t id){
+        decltype(it) lock_it;
+        size_type start, end;
+        data_t value;
+        while (true) {
+            {
+                std::lock_guard lock{next_block};
+                lock_it = it;
+                if (lock_it == counts.end()) {
+                    break;
                 }
-                value = lock_it->first;
-                end = lock_it->second + start;
-                for (auto j = start; j < end; j++) {
-                    arr[j] = value;
-                }
+                ++it;
+                start = i;
+                i += lock_it->second;
             }
-        });
-    }
-
-    for (auto &t : threads) {
-        t.join();
-    }
+            value = lock_it->first;
+            end = lock_it->second + start;
+            for (auto j = start; j < end; j++) {
+                arr[j] = value;
+            }
+        }
+    });
 }
 
 void time_test();
@@ -132,7 +124,7 @@ std::chrono::duration<double> check_time(Func&& f) {
 
 
 void time_test() {
-    size_t N = 10000000;
+    size_t N = 1000000;
     auto arr = build_array(N, N/10);
     auto arr_copy_seq = arr;
     std::cout << "seq: " << check_time([&]{ count_sort_seq(arr_copy_seq); }).count() << std::endl;
