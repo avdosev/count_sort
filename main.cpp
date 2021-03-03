@@ -15,21 +15,19 @@ int main() {
     return 0;
 }
 
-void count_sort_seq(std::vector<data_t> &arr) {
+void count_sort_seq_vec(std::vector<data_t> &arr) {
     using size_type = std::vector<data_t>::size_type;
-    std::map<data_t, size_type> counts;
+    auto max = *std::max_element(arr.begin(), arr.end());
+    std::vector<size_type> counts(max+1);
     for (auto item: arr) {
-        if (auto it = counts.find(item); it == counts.end()) {
-            counts.insert({item, 1});
-        } else {
-            it->second++;
-        }
+        counts[item] += 1;
     }
 
     size_type i = 0;
-    for (auto[item, count]: counts) {
-        for (size_type j = 0; j < count; j++) {
-            arr[i++] = item;
+    for (size_type value = 0; value < counts.size(); value++) {
+        auto count = counts[value];
+        for (size_type k = 0; k < count; k++) {
+            arr[i++] = value;
         }
     }
 }
@@ -50,28 +48,54 @@ void time_test() {
     std::ofstream file;
     file.open("res.csv");
     file << "name,concurrency,time\n";
-    size_t N = 1000000;
+    size_t N = 10000000;
     auto arr = build_array(N, N/10);
     auto arr_copy_seq = arr;
-    file << "seq,1," << check_time([&]{ count_sort_seq(arr_copy_seq); }).count() << std::endl;
+    std::copy(arr.begin(), arr.end(), arr_copy_seq.begin());
+    file << "seq,1," << check_time([&]{ count_sort_seq_vec(arr_copy_seq); }).count() << std::endl;
     decltype(arr) arr_copy_par;
     arr_copy_par.resize(arr.size());
-    for (int concurrency = 2; concurrency < 10; concurrency++) {
-        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-        auto time = check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count();
-        file << "par_baseline," << concurrency << "," << time << std::endl;
-    }
 
-    for (int concurrency = 2; concurrency < 10; concurrency++) {
-        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-        auto time = check_time([&]{  count_sort_par_seq_write(arr_copy_par, concurrency); }).count();
-        file << "par_seq_write," << concurrency << "," << time << std::endl;
-    }
-
+    std::cout << "start par_atomic" << std::endl;
     for (int concurrency = 2; concurrency < 10; concurrency++) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
         auto time = check_time([&]{  count_sort_atomic(arr_copy_par, concurrency); }).count();
         file << "par_atomic," << concurrency << "," << time << std::endl;
+    }
+
+    std::cout << "start par_mutex" << std::endl;
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        auto time = check_time([&]{  count_sort_mutex(arr_copy_par, concurrency); }).count();
+        file << "par_mutex," << concurrency << "," << time << std::endl;
+    }
+
+    std::cout << "start par_mutexes" << std::endl;
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        auto time = check_time([&]{  count_sort_mutexes(arr_copy_par, concurrency); }).count();
+        file << "par_mutexes," << concurrency << "," << time << std::endl;
+    }
+
+    std::cout << "start count_sort_aggregate_seq" << std::endl;
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        auto time = check_time([&]{  count_sort_aggregate_seq(arr_copy_par, concurrency); }).count();
+        file << "par_aggregate_seq," << concurrency << "," << time << std::endl;
+    }
+
+    std::cout << "start count_sort_aggregate_atomic" << std::endl;
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        auto time = check_time([&]{  count_sort_aggregate_atomic(arr_copy_par, concurrency); }).count();
+        file << "par_aggregate_atomic," << concurrency << "," << time << std::endl;
+    }
+
+    std::cout << "start count_sort_aggregate_mutex" << std::endl;
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        auto time = check_time([&]{  count_sort_aggregate_mutex(arr_copy_par, concurrency); }).count();
+        file << "par_aggregate_mutex," << concurrency << "," << time << std::endl;
     }
 
 }
