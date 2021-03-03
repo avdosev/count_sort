@@ -10,7 +10,6 @@
 #include "helper.h"
 #include "common.h"
 
-
 void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
 
@@ -23,13 +22,13 @@ void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
         size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
         for (size_type i = start; i < end; i++) {
             auto item = arr[i];
-            counts[item].fetch_add(1);
+            counts[item].fetch_add(1, std::memory_order_release);
         }
     });
 
     size_type i = 0;
     for (size_type value = 0; value < counts.size(); value++) {
-        auto count = counts[value].load();
+        auto count = counts[value].load(std::memory_order_acquire);
         for (size_type k = 0; k < count; k++) {
             arr[i++] = value;
         }
