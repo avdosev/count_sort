@@ -3,4 +3,4 @@ project(counter_sort)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(counter_sort main.cpp)
+add_executable(counter_sort main.cpp par_count_sort.h helper.h)

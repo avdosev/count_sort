@@ -1,0 +1,73 @@
+#ifndef COUNTER_SORT_PAR_COUNT_SORT_H
+#define COUNTER_SORT_PAR_COUNT_SORT_H
+
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <thread>
+#include <mutex>
+
+using data_t = unsigned;
+
+void count_sort_par(std::vector<data_t> &arr, unsigned concurrency) {
+    using size_type = std::vector<data_t>::size_type;
+    std::vector<std::unordered_map<data_t, size_type>> par_counts(concurrency);
+
+    parallel_exec(concurrency, [&](size_t block){
+        size_type start = arr.size() / concurrency * block;
+        size_type end = std::min(arr.size() / concurrency * (block+1), arr.size());
+        auto& counts = par_counts[block];
+        for (size_type i = start; i < end; i++) {
+            auto item = arr[i];
+            if (auto it = counts.find(item); it == counts.end()) {
+                counts.insert({item, 1});
+            } else {
+                it->second++;
+            }
+        }
+    });
+
+    std::map<data_t, size_type> counts;
+    for (unsigned i = 0; i < concurrency; i++) {
+        for (auto[item, count]: par_counts[i]) {
+            if (auto it = counts.find(item); it == counts.end()) {
+                counts.insert({item, count});
+            } else {
+                it->second+=count;
+            }
+        }
+    }
+
+
+    size_type i = 0;
+    auto it = counts.begin();
+    std::mutex next_block;
+
+    parallel_exec(concurrency, [&arr, &it, &i, &next_block, &counts](size_t id){
+        decltype(it) lock_it;
+        size_type start, end;
+        data_t value;
+        while (true) {
+            {
+                std::lock_guard lock{next_block};
+                lock_it = it;
+                if (lock_it == counts.end()) {
+                    break;
+                }
+                ++it;
+                start = i;
+                i += lock_it->second;
+            }
+            value = lock_it->first;
+            end = lock_it->second + start;
+            for (auto j = start; j < end; j++) {
+                arr[j] = value;
+            }
+        }
+    });
+}
+
+
+
+
+#endif //COUNTER_SORT_PAR_COUNT_SORT_H
