@@ -7,7 +7,9 @@
 #include <thread>
 #include <mutex>
 
-using data_t = unsigned;
+#include "helper.h"
+#include "common.h"
+
 
 void count_sort_par(std::vector<data_t> &arr, unsigned concurrency) {
     using size_type = std::vector<data_t>::size_type;
@@ -65,6 +67,43 @@ void count_sort_par(std::vector<data_t> &arr, unsigned concurrency) {
             }
         }
     });
+}
+
+void count_sort_par_seq_write(std::vector<data_t> &arr, unsigned concurrency) {
+    using size_type = std::vector<data_t>::size_type;
+    std::vector<std::unordered_map<data_t, size_type>> par_counts(concurrency);
+
+    parallel_exec(concurrency, [&](size_t block){
+        size_type start = arr.size() / concurrency * block;
+        size_type end = std::min(arr.size() / concurrency * (block+1), arr.size());
+        auto& counts = par_counts[block];
+        for (size_type i = start; i < end; i++) {
+            auto item = arr[i];
+            if (auto it = counts.find(item); it == counts.end()) {
+                counts.insert({item, 1});
+            } else {
+                it->second++;
+            }
+        }
+    });
+
+    std::map<data_t, size_type> counts;
+    for (unsigned i = 0; i < concurrency; i++) {
+        for (auto[item, count]: par_counts[i]) {
+            if (auto it = counts.find(item); it == counts.end()) {
+                counts.insert({item, count});
+            } else {
+                it->second+=count;
+            }
+        }
+    }
+
+    size_type i = 0;
+    for (auto[item, count]: counts) {
+        for (size_type j = 0; j < count; j++) {
+            arr[i++] = item;
+        }
+    }
 }
 
 

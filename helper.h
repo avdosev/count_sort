@@ -26,7 +26,8 @@ std::chrono::duration<double> check_time(Func&& f) {
     return stop-start;
 }
 
-void print_arr(const std::vector<data_t>& collection) {
+template<typename ValueType>
+void print_arr(const std::vector<ValueType>& collection) {
     std::cout << "[ ";
     for (auto item: collection) {
         std::cout << item << ' ';

@@ -2,9 +2,11 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
+#include <fstream>
 
-#include "par_count_sort.h"
 #include "helper.h"
+#include "common.h"
+#include "par_count_sort.h"
 
 void time_test();
 
@@ -45,15 +47,23 @@ auto build_array(size_t size, unsigned M) {
 
 
 void time_test() {
+    std::ofstream file;
+    file.open("res.csv");
+    file << "name,concurrency,time\n";
     size_t N = 1000000;
     auto arr = build_array(N, N/10);
     auto arr_copy_seq = arr;
-    std::cout << "seq: " << check_time([&]{ count_sort_seq(arr_copy_seq); }).count() << std::endl;
+    file << "seq,1," << check_time([&]{ count_sort_seq(arr_copy_seq); }).count() << std::endl;
     decltype(arr) arr_copy_par;
     arr_copy_par.resize(arr.size());
     for (int concurrency = 2; concurrency < 10; concurrency++) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-        std::cout << "par " << concurrency << ": " << check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count() << std::endl;
+        file << "par_baseline," << concurrency << "," << check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count() << std::endl;
     }
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        file << "par_seq_write," << concurrency << "," << check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count() << std::endl;
+    }
+
 }
 
