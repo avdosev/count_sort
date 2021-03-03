@@ -171,14 +171,14 @@ void count_sort_aggregate_mutex(std::vector<data_t> &arr, unsigned concurrency) 
     using size_type = std::vector<data_t>::size_type;
 
     std::vector<std::vector<size_type>> locals_counts(concurrency);
-    auto max = *std::max_element(arr.begin(), arr.end());
-    std::vector<size_type> counts(max);
+    std::vector<size_type> counts;
     std::mutex counts_mutex;
 
     parallel_exec(concurrency, [&](size_t block){
         size_type start = arr.size() / concurrency * block;
         size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
         auto& local_counts = locals_counts[block];
+        auto max = *std::max_element(arr.begin()+start, arr.begin()+end);
         local_counts.resize(max+1);
         for (size_type i = start; i < end; i++) {
             auto item = arr[i];
@@ -187,6 +187,7 @@ void count_sort_aggregate_mutex(std::vector<data_t> &arr, unsigned concurrency) 
         {
             std::lock_guard counts_lock{counts_mutex};
             auto lcs = local_counts.size();
+            if (counts.size() < lcs) counts.resize(lcs);
             for (size_type i = 0; i < lcs; i++) {
                 counts[i] += local_counts[i];
             }

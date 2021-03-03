@@ -48,7 +48,7 @@ void time_test() {
     std::ofstream file;
     file.open("res.csv");
     file << "name,concurrency,time\n";
-    size_t N = 10000000;
+    size_t N = 20000000;
     auto arr = build_array(N, N/10);
     auto arr_copy_seq = arr;
     std::copy(arr.begin(), arr.end(), arr_copy_seq.begin());
@@ -57,21 +57,21 @@ void time_test() {
     arr_copy_par.resize(arr.size());
 
     std::cout << "start par_atomic" << std::endl;
-    for (int concurrency = 2; concurrency < 10; concurrency++) {
+    for (int concurrency = 2; concurrency < 100; concurrency+=5) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
         auto time = check_time([&]{  count_sort_atomic(arr_copy_par, concurrency); }).count();
         file << "par_atomic," << concurrency << "," << time << std::endl;
     }
 
     std::cout << "start par_mutex" << std::endl;
-    for (int concurrency = 2; concurrency < 10; concurrency++) {
+    for (int concurrency = 2; concurrency < 10; concurrency+=2) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
         auto time = check_time([&]{  count_sort_mutex(arr_copy_par, concurrency); }).count();
         file << "par_mutex," << concurrency << "," << time << std::endl;
     }
 
     std::cout << "start par_mutexes" << std::endl;
-    for (int concurrency = 2; concurrency < 10; concurrency++) {
+    for (int concurrency = 2; concurrency < 100; concurrency+=5) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
         auto time = check_time([&]{  count_sort_mutexes(arr_copy_par, concurrency); }).count();
         file << "par_mutexes," << concurrency << "," << time << std::endl;
