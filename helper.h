@@ -35,4 +35,15 @@ void print_arr(const std::vector<ValueType>& collection) {
     std::cout << "]";
 }
 
+template<typename ValueType>
+void equal_array(const std::vector<ValueType>& collection1, const std::vector<ValueType>& collection2) {
+    if (collection1 != collection2) {
+        std::cout << "not equal" << std::endl;
+        print_arr(collection1);
+        print_arr(collection2);
+        std::cout << std::endl;
+    }
+    else std::cout << "equal" << std::endl;
+}
+
 #endif //COUNTER_SORT_HELPER_H

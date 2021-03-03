@@ -58,11 +58,20 @@ void time_test() {
     arr_copy_par.resize(arr.size());
     for (int concurrency = 2; concurrency < 10; concurrency++) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-        file << "par_baseline," << concurrency << "," << check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count() << std::endl;
+        auto time = check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count();
+        file << "par_baseline," << concurrency << "," << time << std::endl;
     }
+
     for (int concurrency = 2; concurrency < 10; concurrency++) {
         std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-        file << "par_seq_write," << concurrency << "," << check_time([&]{  count_sort_par(arr_copy_par, concurrency); }).count() << std::endl;
+        auto time = check_time([&]{  count_sort_par_seq_write(arr_copy_par, concurrency); }).count();
+        file << "par_seq_write," << concurrency << "," << time << std::endl;
+    }
+
+    for (int concurrency = 2; concurrency < 10; concurrency++) {
+        std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+        auto time = check_time([&]{  count_sort_atomic(arr_copy_par, concurrency); }).count();
+        file << "par_atomic," << concurrency << "," << time << std::endl;
     }
 
 }

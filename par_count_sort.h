@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <thread>
 #include <mutex>
+#include <algorithm>
+#include <atomic>
 
 #include "helper.h"
 #include "common.h"
@@ -17,7 +19,7 @@ void count_sort_par(std::vector<data_t> &arr, unsigned concurrency) {
 
     parallel_exec(concurrency, [&](size_t block){
         size_type start = arr.size() / concurrency * block;
-        size_type end = std::min(arr.size() / concurrency * (block+1), arr.size());
+        size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
         auto& counts = par_counts[block];
         for (size_type i = start; i < end; i++) {
             auto item = arr[i];
@@ -75,7 +77,7 @@ void count_sort_par_seq_write(std::vector<data_t> &arr, unsigned concurrency) {
 
     parallel_exec(concurrency, [&](size_t block){
         size_type start = arr.size() / concurrency * block;
-        size_type end = std::min(arr.size() / concurrency * (block+1), arr.size());
+        size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
         auto& counts = par_counts[block];
         for (size_type i = start; i < end; i++) {
             auto item = arr[i];
@@ -106,6 +108,30 @@ void count_sort_par_seq_write(std::vector<data_t> &arr, unsigned concurrency) {
     }
 }
 
+void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
+    if (arr.empty()) return;
+
+    using size_type = std::vector<data_t>::size_type;
+    auto max = *std::max_element(arr.begin(), arr.end());
+    std::vector<std::atomic<size_type>> counts(max+1);
+
+    parallel_exec(concurrency, [&](size_t block){
+        size_type start = arr.size() / concurrency * block;
+        size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
+        for (size_type i = start; i < end; i++) {
+            auto item = arr[i];
+            counts[item].fetch_add(1);
+        }
+    });
+
+    size_type i = 0;
+    for (size_type value = 0; value < counts.size(); value++) {
+        auto count = counts[value].load();
+        for (size_type k = 0; k < count; k++) {
+            arr[i++] = value;
+        }
+    }
+}
 
 
 
