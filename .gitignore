@@ -32,4 +32,8 @@
 *.app
 
 .idea
+.vscode
 cmake-*
+
+*.png
+*.csv

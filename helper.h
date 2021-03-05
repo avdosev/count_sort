@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <thread>
+#include <algorithm>
 
 template<typename Function>
 void parallel_exec(size_t concurrency, Function f) {

@@ -16,7 +16,6 @@ void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
     using size_type = std::vector<data_t>::size_type;
     auto max = *std::max_element(arr.begin(), arr.end());
     std::vector<std::atomic<size_type>> counts(max+1);
-
     parallel_exec(concurrency, [&](size_t block){
         size_type start = arr.size() / concurrency * block;
         size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
