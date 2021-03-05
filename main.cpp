@@ -80,7 +80,7 @@ void time_test() {
         }
 
         std::cout << "start par_mutexes" << std::endl;
-        for (int concurrency = 2; concurrency < 100; concurrency+=5) {
+        for (int concurrency : {2, 7, 29, 50, 100}) {
             std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
             auto time = check_time([&]{  count_sort_mutexes(arr_copy_par, concurrency); }).count();
             write_csv_data(file, "par_mutexes", concurrency, time, N);
