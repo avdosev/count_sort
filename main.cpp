@@ -9,9 +9,11 @@
 #include "par_count_sort.h"
 
 void time_test();
+void data_race_test();
 
 int main() {
-    time_test();
+    data_race_test();
+//    time_test();
     return 0;
 }
 
@@ -109,3 +111,26 @@ void time_test() {
     }
 }
 
+void data_race_test() {
+    size_t N = 1000000;
+    auto arr = build_array(N, 100);
+
+    auto arr_copy_seq = arr;
+    count_sort_seq_vec(arr_copy_seq);
+
+    auto arr_copy_data_race = arr;
+
+    try {
+        count_sort_data_race(arr_copy_data_race, 4);
+    } catch (std::exception& ex) {
+        std::cout << "error in sort" << std::endl;
+    }
+
+    if (!equal_array(arr_copy_data_race, arr_copy_seq)) {
+        size_t error_count = 0;
+        for (size_t i = 0; i < N; i++) {
+            error_count += arr_copy_data_race[i] != arr_copy_seq[i];
+        }
+        std::cout << "errors: " << error_count << std::endl;
+    }
+}

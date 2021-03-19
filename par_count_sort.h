@@ -34,6 +34,30 @@ void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
     }
 }
 
+void count_sort_data_race(std::vector<data_t> &arr, unsigned concurrency) {
+    if (arr.empty()) return;
+
+    using size_type = std::vector<data_t>::size_type;
+    auto max = *std::max_element(arr.begin(), arr.end());
+    std::vector<size_type> counts(max+1);
+    parallel_exec(concurrency, [&](size_t block){
+        size_type start = arr.size() / concurrency * block;
+        size_type end = (block == concurrency-1) ? arr.size() : std::min(arr.size() / concurrency * (block+1), arr.size());
+        for (size_type i = start; i < end; i++) {
+            auto item = arr[i];
+            counts[item] += 1;
+        }
+    });
+
+    size_type i = 0;
+    for (size_type value = 0; value < counts.size(); value++) {
+        auto count = counts[value];
+        for (size_type k = 0; k < count; k++) {
+            arr.at(i++) = value;
+        }
+    }
+}
+
 void count_sort_mutex(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
 
