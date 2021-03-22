@@ -1,56 +1,18 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <random>
 #include <fstream>
 
 #include "helper.h"
-#include "common.h"
-#include "par_count_sort.h"
+#include "count_sort.h"
 
 void time_test();
 void data_race_test();
 
 int main() {
     data_race_test();
-//    time_test();
+    time_test();
     return 0;
-}
-
-void count_sort_seq_vec(std::vector<data_t> &arr) {
-    using size_type = std::vector<data_t>::size_type;
-    auto max = *std::max_element(arr.begin(), arr.end());
-    std::vector<size_type> counts(max+1);
-    for (auto item: arr) {
-        counts[item] += 1;
-    }
-
-    size_type i = 0;
-    for (size_type value = 0; value < counts.size(); value++) {
-        auto count = counts[value];
-        for (size_type k = 0; k < count; k++) {
-            arr[i++] = value;
-        }
-    }
-}
-
-auto build_array(size_t size, unsigned M) {
-    std::vector<data_t> arr;
-    arr.reserve(size);
-    std::mt19937 gen;
-    std::uniform_int_distribution<data_t> distrib(0, M);
-    for (size_t i = 0; i < size; i++) {
-        arr.push_back(distrib(gen));
-    }
-    return arr;
-}
-
-void write_csv_header(std::ostream& stream) {
-    stream << "name,concurrency,time,size" << std::endl;
-}
-
-void write_csv_data(std::ostream& stream, std::string_view name, size_t concurrency, double time, size_t size) {
-    stream << name << ',' << concurrency << ',' << time << ',' << size << std::endl;
 }
 
 void time_test() {
@@ -63,7 +25,7 @@ void time_test() {
         auto arr = build_array(N, 1000);
         auto arr_copy_seq = arr;
         std::copy(arr.begin(), arr.end(), arr_copy_seq.begin());
-        write_csv_data(file, "seq", 1, check_time([&]{ count_sort_seq_vec(arr_copy_seq); }).count(), N);
+        write_csv_data(file, "seq", 1, check_time([&]{ count_sort_seq(arr_copy_seq); }).count(), N);
         decltype(arr) arr_copy_par;
         arr_copy_par.resize(arr.size());
 
@@ -116,7 +78,7 @@ void data_race_test() {
     auto arr = build_array(N, 100);
 
     auto arr_copy_seq = arr;
-    count_sort_seq_vec(arr_copy_seq);
+    count_sort_seq(arr_copy_seq);
 
     auto arr_copy_data_race = arr;
 

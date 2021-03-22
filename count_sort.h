@@ -1,5 +1,5 @@
-#ifndef COUNTER_SORT_PAR_COUNT_SORT_H
-#define COUNTER_SORT_PAR_COUNT_SORT_H
+#ifndef COUNTER_SORT_COUNT_SORT_H
+#define COUNTER_SORT_COUNT_SORT_H
 
 #include <vector>
 #include <thread>
@@ -9,6 +9,23 @@
 
 #include "helper.h"
 #include "common.h"
+
+void count_sort_seq(std::vector<data_t> &arr) {
+    using size_type = std::vector<data_t>::size_type;
+    auto max = *std::max_element(arr.begin(), arr.end());
+    std::vector<size_type> counts(max+1);
+    for (auto item: arr) {
+        counts[item] += 1;
+    }
+
+    size_type i = 0;
+    for (size_type value = 0; value < counts.size(); value++) {
+        auto count = counts[value];
+        for (size_type k = 0; k < count; k++) {
+            arr[i++] = value;
+        }
+    }
+}
 
 void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
@@ -228,4 +245,4 @@ void count_sort_aggregate_mutex(std::vector<data_t> &arr, unsigned concurrency) 
 
 
 
-#endif //COUNTER_SORT_PAR_COUNT_SORT_H
+#endif //COUNTER_SORT_COUNT_SORT_H
