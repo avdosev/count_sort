@@ -10,8 +10,9 @@
 #include "helper.h"
 #include "common.h"
 
+using size_type = std::vector<data_t>::size_type;
+
 void count_sort_seq(std::vector<data_t> &arr) {
-    using size_type = std::vector<data_t>::size_type;
     auto max = *std::max_element(arr.begin(), arr.end());
     std::vector<size_type> counts(max+1);
     for (auto item: arr) {
@@ -27,10 +28,72 @@ void count_sort_seq(std::vector<data_t> &arr) {
     }
 }
 
+template <typename SizeT>
+void seq_write(std::vector<data_t> &arr, std::vector<SizeT>& counts) {
+    size_type i = 0;
+    for (size_type value = 0; value < counts.size(); value++) {
+        size_type count = counts[value];
+        for (size_type k = 0; k < count; k++) {
+            arr[i+k] = value;
+        }
+        i += count;
+    }
+}
+
+template <typename SizeT>
+void parallel_write_v1(std::vector<data_t> &arr, std::vector<SizeT>& counts, unsigned concurrency) {
+    parallel_exec(concurrency, [&, concurrency](size_t block){
+        size_type i = 0;
+        for (size_type value = 0; value < counts.size(); value++) {
+            size_type count = counts[value];
+            for (size_type k = block; k < count; k+=concurrency) {
+                arr[i+k] = value;
+            }
+            i += count;
+        }
+    });
+}
+
+template <typename SizeT>
+void parallel_write_v2(std::vector<data_t> &arr, std::vector<SizeT>& counts, unsigned concurrency) {
+    parallel_exec(concurrency, [&, concurrency](size_t block){
+        size_type i = 0;
+        for (size_type value = 0; value < counts.size(); value++) {
+            size_type count = counts[value];
+            if (value % concurrency == block) {
+                for (size_type k = 0; k < count; k++) {
+                    arr[i+k] = value;
+                }
+            }
+            i += count;
+        }
+    });
+}
+template <typename SizeT>
+void parallel_write_v3(std::vector<data_t> &arr, std::vector<SizeT>& counts, unsigned concurrency) {
+    parallel_exec(concurrency, [&, concurrency](size_t block){
+        size_type i = 0;
+        for (size_type value = 0; value < counts.size(); value++) {
+            size_type count = counts[value];
+            if (value % concurrency == block) {
+                for (size_type k = 0; k < count; k++) {
+                    arr[i+k] = value;
+                }
+            }
+            i += count;
+        }
+    });
+}
+
+template <typename SizeT>
+void parallel_write(std::vector<data_t> &arr, std::vector<SizeT>& counts, unsigned concurrency) {
+    parallel_write_v1(arr, counts, concurrency);
+//    parallel_write_v2(arr, counts, concurrency);
+}
+
 void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
 
-    using size_type = std::vector<data_t>::size_type;
     auto max = *std::max_element(arr.begin(), arr.end());
     std::vector<std::atomic<size_type>> counts(max+1);
     parallel_exec(concurrency, [&](size_t block){
@@ -54,7 +117,6 @@ void count_sort_atomic(std::vector<data_t> &arr, unsigned concurrency) {
 void count_sort_data_race(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
 
-    using size_type = std::vector<data_t>::size_type;
     auto max = *std::max_element(arr.begin(), arr.end());
     std::vector<size_type> counts(max+1);
     parallel_exec(concurrency, [&](size_t block){
@@ -78,7 +140,6 @@ void count_sort_data_race(std::vector<data_t> &arr, unsigned concurrency) {
 void count_sort_mutex(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
 
-    using size_type = std::vector<data_t>::size_type;
     auto max = *std::max_element(arr.begin(), arr.end());
     std::vector<size_type> counts(max+1);
     std::mutex counts_mutex;
@@ -105,7 +166,6 @@ void count_sort_mutex(std::vector<data_t> &arr, unsigned concurrency) {
 void count_sort_mutexes(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
 
-    using size_type = std::vector<data_t>::size_type;
     auto max = *std::max_element(arr.begin(), arr.end());
     std::vector<size_type> counts(max+1);
     std::vector<std::mutex> counts_mutex(concurrency*4);
@@ -129,10 +189,9 @@ void count_sort_mutexes(std::vector<data_t> &arr, unsigned concurrency) {
     }
 }
 
+template <bool par_write=true>
 void count_sort_aggregate_seq(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
-
-    using size_type = std::vector<data_t>::size_type;
 
     std::vector<std::vector<size_type>> locals_counts(concurrency);
 
@@ -162,19 +221,16 @@ void count_sort_aggregate_seq(std::vector<data_t> &arr, unsigned concurrency) {
         }
     }
 
-    size_type i = 0;
-    for (size_type value = 0; value < counts.size(); value++) {
-        auto count = counts[value];
-        for (size_type k = 0; k < count; k++) {
-            arr[i++] = value;
-        }
+    if constexpr (par_write) {
+        parallel_write(arr, counts, concurrency);
+    } else {
+        seq_write(arr, counts);
     }
 }
 
+template <bool par_write=true>
 void count_sort_aggregate_atomic(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
-
-    using size_type = std::vector<data_t>::size_type;
 
     std::vector<std::vector<size_type>> locals_counts(concurrency);
     auto max = *std::max_element(arr.begin(), arr.end());
@@ -196,19 +252,16 @@ void count_sort_aggregate_atomic(std::vector<data_t> &arr, unsigned concurrency)
         }
     });
 
-    size_type i = 0;
-    for (size_type value = 0; value < counts.size(); value++) {
-        auto count = counts[value].load(std::memory_order_acquire);
-        for (size_type k = 0; k < count; k++) {
-            arr[i++] = value;
-        }
+    if constexpr (par_write) {
+        parallel_write(arr, counts, concurrency);
+    } else {
+        seq_write(arr, counts);
     }
 }
 
+template <bool par_write=true>
 void count_sort_aggregate_mutex(std::vector<data_t> &arr, unsigned concurrency) {
     if (arr.empty()) return;
-
-    using size_type = std::vector<data_t>::size_type;
 
     std::vector<std::vector<size_type>> locals_counts(concurrency);
     std::vector<size_type> counts;
@@ -234,12 +287,10 @@ void count_sort_aggregate_mutex(std::vector<data_t> &arr, unsigned concurrency) 
         }
     });
 
-    size_type i = 0;
-    for (size_type value = 0; value < counts.size(); value++) {
-        auto count = counts[value];
-        for (size_type k = 0; k < count; k++) {
-            arr[i++] = value;
-        }
+    if constexpr (par_write) {
+        parallel_write(arr, counts, concurrency);
+    } else {
+        seq_write(arr, counts);
     }
 }
 

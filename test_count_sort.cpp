@@ -21,7 +21,7 @@ void time_test() {
     write_csv_header(file);
 //    for (size_t N = 1000000; N <= 20000000; N += 1000000)
     {
-        size_t N = 30000000;
+        size_t N = 1000000000;
         auto arr = build_array(N, 1000);
         auto arr_copy_seq = arr;
         std::copy(arr.begin(), arr.end(), arr_copy_seq.begin());
@@ -29,46 +29,67 @@ void time_test() {
         decltype(arr) arr_copy_par;
         arr_copy_par.resize(arr.size());
 
-        std::cout << "start par_atomic" << std::endl;
-        for (int concurrency = 2; concurrency <= 10; concurrency+=1) {
-            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-            auto time = check_time([&]{  count_sort_atomic(arr_copy_par, concurrency); }).count();
-            write_csv_data(file, "par_atomic", concurrency, time, N);
-        }
+//        std::cout << "start par_atomic" << std::endl;
+//        for (int concurrency = 2; concurrency <= 10; concurrency+=1) {
+//            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+//            auto time = check_time([&]{  count_sort_atomic(arr_copy_par, concurrency); }).count();
+//            write_csv_data(file, "par_atomic", concurrency, time, N);
+//        }
+//
+//        std::cout << "start par_mutex" << std::endl;
+//        for (int concurrency = 2; concurrency < 10; concurrency+=2) {
+//            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+//            auto time = check_time([&]{  count_sort_mutex(arr_copy_par, concurrency); }).count();
+//            write_csv_data(file, "par_mutex", concurrency, time, N);
+//        }
+//
+//        std::cout << "start par_mutexes" << std::endl;
+//        for (int concurrency : {2, 7, 29, 50, 100}) {
+//            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+//            auto time = check_time([&]{  count_sort_mutexes(arr_copy_par, concurrency); }).count();
+//            write_csv_data(file, "par_mutexes", concurrency, time, N);
+//        }
 
-        std::cout << "start par_mutex" << std::endl;
-        for (int concurrency = 2; concurrency < 10; concurrency+=2) {
-            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-            auto time = check_time([&]{  count_sort_mutex(arr_copy_par, concurrency); }).count();
-            write_csv_data(file, "par_mutex", concurrency, time, N);
-        }
-
-        std::cout << "start par_mutexes" << std::endl;
-        for (int concurrency : {2, 7, 29, 50, 100}) {
-            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-            auto time = check_time([&]{  count_sort_mutexes(arr_copy_par, concurrency); }).count();
-            write_csv_data(file, "par_mutexes", concurrency, time, N);
-        }
-
-        std::cout << "start count_sort_aggregate_seq" << std::endl;
+        std::cout << "start count_sort_aggregate_seq_par_write" << std::endl;
         for (int concurrency = 2; concurrency < 10; concurrency++) {
             std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-            auto time = check_time([&]{  count_sort_aggregate_seq(arr_copy_par, concurrency); }).count();
-            write_csv_data(file, "par_aggregate_seq", concurrency, time, N);
+            auto time = check_time([&]{  count_sort_aggregate_seq<true>(arr_copy_par, concurrency); }).count();
+            write_csv_data(file, "par_aggregate_seq_par_write", concurrency, time, N);
         }
 
-        std::cout << "start count_sort_aggregate_atomic" << std::endl;
+        std::cout << "start count_sort_aggregate_atomic_par_write" << std::endl;
         for (int concurrency = 2; concurrency < 10; concurrency++) {
             std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-            auto time = check_time([&]{  count_sort_aggregate_atomic(arr_copy_par, concurrency); }).count();
-            write_csv_data(file, "par_aggregate_atomic", concurrency, time, N);
+            auto time = check_time([&]{  count_sort_aggregate_atomic<true>(arr_copy_par, concurrency); }).count();
+            write_csv_data(file, "par_aggregate_atomic_par_write", concurrency, time, N);
         }
 
-        std::cout << "start count_sort_aggregate_mutex" << std::endl;
+        std::cout << "start count_sort_aggregate_mutex_par_write" << std::endl;
         for (int concurrency = 2; concurrency < 10; concurrency++) {
             std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
-            auto time = check_time([&]{  count_sort_aggregate_mutex(arr_copy_par, concurrency); }).count();
-            write_csv_data(file, "par_aggregate_mutex", concurrency, time, N);
+            auto time = check_time([&]{  count_sort_aggregate_mutex<true>(arr_copy_par, concurrency); }).count();
+            write_csv_data(file, "par_aggregate_mutex_par_write", concurrency, time, N);
+        }
+
+        std::cout << "start count_sort_aggregate_seq_seq_write" << std::endl;
+        for (int concurrency = 2; concurrency < 10; concurrency++) {
+            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+            auto time = check_time([&]{  count_sort_aggregate_seq<false>(arr_copy_par, concurrency); }).count();
+            write_csv_data(file, "par_aggregate_seq_seq_write", concurrency, time, N);
+        }
+
+        std::cout << "start count_sort_aggregate_atomic_seq_write" << std::endl;
+        for (int concurrency = 2; concurrency < 10; concurrency++) {
+            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+            auto time = check_time([&]{  count_sort_aggregate_atomic<false>(arr_copy_par, concurrency); }).count();
+            write_csv_data(file, "par_aggregate_atomic_seq_write", concurrency, time, N);
+        }
+
+        std::cout << "start count_sort_aggregate_mutex_seq_write" << std::endl;
+        for (int concurrency = 2; concurrency < 10; concurrency++) {
+            std::copy(arr.begin(), arr.end(), arr_copy_par.begin());
+            auto time = check_time([&]{  count_sort_aggregate_mutex<false>(arr_copy_par, concurrency); }).count();
+            write_csv_data(file, "par_aggregate_mutex_seq_write", concurrency, time, N);
         }
     }
 }
