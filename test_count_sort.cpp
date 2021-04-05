@@ -19,9 +19,9 @@ void time_test() {
     std::ofstream file;
     file.open("res.csv");
     write_csv_header(file);
-    for (size_t N = 1000000; N <= 20000000; N += 1000000)
+//    for (size_t N = 1000000; N <= 20000000; N += 1000000)
     {
-
+        size_t N = 30000000;
         auto arr = build_array(N, 1000);
         auto arr_copy_seq = arr;
         std::copy(arr.begin(), arr.end(), arr_copy_seq.begin());
